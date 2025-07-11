@@ -254,3 +254,60 @@ gif <- animate(g, nframes = t_max, fps = 8, width = 800, height = 500)
 anim_save("pvalue_type_errors_persistent.gif", gif)
 
 
+
+
+
+# --- load packages ---
+library(ggplot2)
+library(tidyr)
+library(scales)
+
+# --- parameters ---
+alpha <- 0.05
+powers <- c("80% power" = 0.80,
+            "20% power" = 0.20,
+            "10% power" = 0.10)
+
+# sequence of pre-study odds R from 0 to 1
+R <- seq(0, 1, length.out = 1001)
+
+# build a data-frame with one column per power
+df <- data.frame(R = R)
+for (nm in names(powers)) {
+  p <- powers[[nm]]
+  df[[nm]] <- p * R / (p * R + alpha)
+}
+
+# reshape into long format for ggplot
+df_long <- pivot_longer(df,
+                        cols      = -R,
+                        names_to  = "Power",
+                        values_to = "PostStudyProb")
+
+# plot
+p <- ggplot(df_long, aes(x = R, y = PostStudyProb, color = Power)) +
+  geom_line(size = 1.2) +
+  scale_color_manual(values = c("80% power" = "#1f78b4",
+                                "20% power" = "#33a02c",
+                                "10% power" = "#ff7f00")) +
+  scale_y_continuous(labels = percent_format(accuracy = 1),
+                     limits = c(0, 1)) +
+  labs(
+    x     = "Pre-study odds R",
+    y     = "Post-study probability (%)",
+    color = NULL
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid.minor = element_blank(),
+    legend.position   = c(0.75, 0.25),
+    legend.background = element_rect(fill = alpha("white", 0.7), colour = NA)
+  )
+
+# display
+print(p)
+
+# optionally save to file
+# ggsave("ppv_curves.png", p, width = 6, height = 4, dpi = 300)
+
+
